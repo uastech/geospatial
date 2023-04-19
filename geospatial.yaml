@@ -1,0 +1,1343 @@
+openapi: 3.1.0
+info:
+  title: Geospatial Information Service Interfaces
+  version: 0.0.1
+  description: >-
+    Interfaces by which a Data Provider can deliver the geospatial information (UAS Geographical Zones, including U-space Airspace Volumes), to users.
+    
+    Note: Unless otherwise specified, fields specified in a message but not declared in the API must be ignored when evaluating format validity.
+components:
+  schemas:
+    ErrorResponse:
+      description: >-
+        Human-readable string returned when an error occurs as a result of a geospatial
+        data transaction.
+      type: object
+      properties:
+        message:
+          description: >-
+            Human-readable message indicating what error occurred and/or why.
+          type: string
+          example: The error occurred because [...]
+
+    TextShortType:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          maxLength: 200
+          description: A free text with a maximum length of 200 characters
+        lang:
+          type: string
+    MultilingualTextShort:
+      type: array
+      items:
+        $ref: '#/components/schemas/TextShortType'
+    CodeZoneIdentifierType:
+      type: string
+      maxLength: 7
+      description: >-
+        a string of maximum 7 characters that uniquely identifies the area
+        within a geographical scope.
+
+        NOTE (1): This shall not include the country identifier, which is a
+        separate attribute of the UAS Zone.
+
+        NOTE (2): The length of this data type is limited to 7 characters for
+        compatibility with ARINC 424 and AIXM, where an airspace designator may
+        have maximum 10 characters. The 10 characters are the result of
+        concatenating the UAS Zone attributes for country and identifier.
+      example: EXMPL01
+    CodeCountryISOType:
+      type: string
+      minLength: 3
+      maxLength: 3
+      description: >-
+        A 3 letter identifier of a country or territory using the ISO 3166-1
+        alpha-3 standard.
+
+        NOTE:
+           The ISO 3-letter country codes come with the following advantages:
+              - allow to distinguish between remote territories and mainland
+              - are unique, unlike the ICAO Country codes where the same State
+                could have two or more codes
+              - are also used in military standards, such as NATO STANAG 1059
+                INT, which come with well document additions that might be also
+                useful for UAS areas.
+      example: CHE
+    CodeZoneType:
+      type: string
+      description: >-
+        A coded list of values which allows indicating that the definition of a
+        UAS Zone is specifically customised for a particular UAS or operator.
+      enum:
+        - USPACE
+        - PROHIBITED
+        - REQ_AUTHORISATION
+        - CONDITIONAL
+        - NO_RESTRICTION
+    CodeZoneVariant:
+      type: string
+      enum:
+        - COMMON
+        - CUSTOMIZED
+    CodeZoneReasonType:
+      type: string
+      description: >-
+        A coded indication of a reason that justifies the existence of an UAS
+        Zone
+      enum:
+        - AIR_TRAFFIC
+        - SENSITIVE
+        - PRIVACY
+        - POPULATION
+        - NATURE
+        - NOISE
+        - FOREIGN_TERRITORY
+        - EMERGENCY
+        - OTHER
+    CodeYesNoType:
+      type: string
+      description: >-
+        A coded value that indicates a choice between a positive (yes) or a
+        negative (no) applicability.
+      enum:
+        - YES
+        - NO
+    Authority:
+      type: object
+      description: >-
+        A relevant authority that is in charge for authorising, being notified
+        or providing information for UAS operations in the UAS zone.
+
+        Rule:
+           at least one of the following shall be specified - siteURL, email,
+           phone.
+      properties:
+        name:
+          $ref: '#/components/schemas/MultilingualTextShort'
+          description: The official name of a public or private authority
+        service:
+          $ref: '#/components/schemas/MultilingualTextShort'
+          description: >-
+            The name of a specific department or service within the organisation
+        contactName:
+          $ref: '#/components/schemas/MultilingualTextShort'
+          description: >-
+            The name or role of a specific person that needs to be contacted
+            within the organisation
+        siteURL:
+          $ref: '#/components/schemas/TextShortType'
+          description: >-
+            The URL of the public internet site through which the organisation
+            may be contacted
+
+            Note: in the data coding format, this might be further constrained
+            in order to ensure a valid URL format.
+        email:
+          $ref: '#/components/schemas/TextShortType'
+          description: >-
+            The e-mail address by which the organisation may be contacted.
+
+            Note: in the data coding format, this might be further constrained
+            in order to ensure a valid e-mail format.
+        phone:
+          $ref: '#/components/schemas/TextShortType'
+          description: >-
+            A phone number at which the organisation may be contacted
+        purpose:
+          $ref: '#/components/schemas/CodeAuthorityRole'
+          description: The role of the Authority in relation with the zone.
+        interval_before:
+          type: string
+          format: duration
+          description: >-
+            The minimal time interval required between notification or
+            authorization request and starting to operate in the zone, in the
+            format PnnDTnnHnnM (ISO 8601).
+    CodeAuthorityRole:
+      type: string
+      description: >-
+        A coded list of values indicating the role that an authority has in
+        relation with the UAS zone.
+      enum:
+        - AUTHORIZATION
+        - NOTIFICATION
+        - INFORMATION
+    CodeVerticalReferenceType:
+      type: string
+      enum:
+        - AGL
+        - AMSL
+        - WGS84HAE
+    CodeWeekDayType:
+      type: string
+      enum:
+        - MON
+        - TUE
+        - WED
+        - THU
+        - FRI
+        - SAT
+        - SUN
+        - ANY
+    CodeGeometrySubType:
+      type: string
+      enum:
+        - Circle
+    CodeDaylightEventType:
+      type: string
+      enum:
+        - BMCT
+        - SR
+        - SS
+        - EECT
+    UomDistance:
+      type: string
+      enum:
+        - M
+        - FT
+    DateTimeType:
+      type: string
+      format: datetime
+    TimeType:
+      type: string
+
+    GeoJSONGeometryType:
+      type: string
+      enum:
+        - GeometryCollection
+        - Polygon
+        - Point
+    GeoJSONCoordinates:
+      anyOf:
+        - type: array
+          minItems: 1
+          items:
+            type: array
+            minItems: 1
+            items:
+              type: array
+              minItems: 2
+              maxItems: 2
+              items:
+                type: number
+                format: double
+        - type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+            format: double
+      example: [[[2.585866, 49.029301], [2.610414, 48.983358], [2.731263, 48.987301], [2.704141, 49.044704], [2.585866, 49.029301]]]
+    BoundingBox:
+      type: array
+      minItems: 4
+      maxItems: 4
+      items:
+        type: number
+        format: double
+      example: [2.5, 48.9, 2.8, 49.1]
+
+    UASZoneID:
+      description: >-
+        Globally-unique identifier of a UAS Zone.
+      type: object
+      properties:
+        identifier:
+          $ref: '#/components/schemas/CodeZoneIdentifierType'
+        country:
+          $ref: '#/components/schemas/CodeCountryISOType'
+    VerticalLayer:
+      type: object
+      properties:
+        upper:
+          type: number
+          format: double
+          example: 0
+        upperReference:
+          $ref: '#/components/schemas/CodeVerticalReferenceType'
+        lower:
+          type: number
+          format: double
+          example: 120
+        lowerReference:
+          $ref: '#/components/schemas/CodeVerticalReferenceType'
+        uom:
+          $ref: '#/components/schemas/UomDistance'
+    HorizontalExtent:
+      type: object
+      properties:
+        subType:
+          $ref: '#/components/schemas/CodeGeometrySubType'
+        radius:
+          type: number
+          format: double
+          example: 500
+        radiusUom:
+          $ref: '#/components/schemas/UomDistance'
+    Geometry:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          anyOf:
+            - $ref: '#/components/schemas/GeoJSONGeometryType'
+          example: Polygon
+        coordinates:
+          $ref: '#/components/schemas/GeoJSONCoordinates'
+        geometries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Geometry'
+        layer:
+          $ref: '#/components/schemas/VerticalLayer'
+        extent:
+          $ref: '#/components/schemas/HorizontalExtent'
+    DailyPeriod:
+      type: object
+      properties:
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeWeekDayType'
+        startTime:
+          $ref: '#/components/schemas/TimeType'
+        startEvent:
+          $ref: '#/components/schemas/CodeDaylightEventType'
+        endType:
+          $ref: '#/components/schemas/TimeType'
+        endEvent:
+          $ref: '#/components/schemas/CodeDaylightEventType'
+    TimePeriod:
+      type: object
+      properties:
+        startDateTime:
+          $ref: '#/components/schemas/DateTimeType'
+        endDateTime:
+          $ref: '#/components/schemas/DateTimeType'
+        schedule:
+          $ref: '#/components/schemas/DailyPeriod'
+    Metadata:
+      type: object
+      properties:
+        creationDateTime:
+          $ref: '#/components/schemas/DateTimeType'
+        updateDateTime:
+          $ref: '#/components/schemas/DateTimeType'
+        author:
+          $ref: '#/components/schemas/TextShortType'
+    UASZoneVersion:
+      type: object
+      required:
+        - identifier
+        - country
+        - type
+        - variant
+      properties:
+        identifier:
+          $ref: '#/components/schemas/CodeZoneIdentifierType'
+        country:
+          $ref: '#/components/schemas/CodeCountryISOType'
+        name:
+          $ref: '#/components/schemas/MultilingualTextShort'
+        type:
+          $ref: '#/components/schemas/CodeZoneType'
+        variant:
+          $ref: '#/components/schemas/CodeZoneVariant'
+        region:
+          type: number
+          format: int
+        reason:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodeZoneReasonType'
+        otherReasonInfo:
+          $ref: '#/components/schemas/MultilingualTextShort'
+        regulationExemption:
+          $ref: '#/components/schemas/CodeYesNoType'
+        message:
+          $ref: '#/components/schemas/MultilingualTextShort'
+        limitedApplicability:
+          $ref: '#/components/schemas/TimePeriod'
+        zoneAuthority:
+          type: array
+          items:
+            $ref: '#/components/schemas/Authority'
+        dataSource:
+          $ref: '#/components/schemas/Metadata'
+    Feature:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+        geometry:
+          $ref: '#/components/schemas/Geometry'
+        properties:
+          $ref: '#/components/schemas/UASZoneVersion'
+    DatasetMetadata:
+      type: object
+      properties:
+        validFrom:
+          $ref: '#/components/schemas/DateTimeType'
+        validTo:
+          $ref: '#/components/schemas/DateTimeType'
+        provider:
+          $ref: '#/components/schemas/MultilingualTextShort'
+        issued:
+          $ref: '#/components/schemas/DateTimeType'
+        description:
+          $ref: '#/components/schemas/MultilingualTextShort'
+        technicalLimitation:
+          $ref: '#/components/schemas/MultilingualTextShort'
+    FeatureCollection:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Example UAS zones
+        type:
+          type: string
+          enum:
+            - FeatureCollection
+        bbox:
+          $ref: '#/components/schemas/BoundingBox'
+        features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
+        properties:
+          $ref: '#/components/schemas/DatasetMetadata'
+
+    GeoPolygonString:
+      description: >-
+        Plain-string representation of a geographic polygon consisting of at least three geographic points describing a
+        closed polygon on the earth.  Each point consists of longitude,latitude in degrees.  Points are also
+        comma-delimited, so this parameter will look like `lng1,lat1,lng2,lat2,lng3,lat3,...`  Latitude values must fall
+        in the range [-90, 90] and longitude values must fall in the range [-180, 180].
+
+        The bounding edges of this polygon are the shortest paths between connected vertices.  This means, for instance,
+        that the edge between two points both defined at a particular latitude is not generally contained at that
+        latitude.
+        
+        The winding order must be interpreted as the order which produces the smaller area.
+        
+        The path between two vertices is the shortest possible path between those vertices.
+        
+        Edges may not cross.
+        
+        Vertices may not be duplicated.  In particular, the final polygon vertex must not be identical to the first
+        vertex.
+      type: string
+      example: 2.585866,49.029301,2.610414,48.983358,2.731263,48.987301,2.704141,49.044704
+    AltitudeString:
+      description: >-
+        Plain-string representation of an altitude.  The format is:
+        
+        `<VALUE>_<UOM>_<REFERENCE>`
+        
+        `<VALUE>` must be a decimal number.
+        
+        `<UOM>` must match UomDistance
+        
+        `<REFERENCE>` must match CodeVerticalReferenceType.
+      type: string
+      example: 400_FT_AGL
+    UUIDv4Format:
+      description: >-
+        String whose format matches a version-4 UUID according to RFC 4122.
+      maxLength: 36
+      minLength: 36
+      type: string
+      format: uuid
+      pattern: >-
+        ^[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-4[0-9a-fA-F]{3}\-[8-b][0-9a-fA-F]{3}\-[0-9a-fA-F]{12}$
+      example: 03e5572a-f733-49af-bc14-8a18bd53ee39
+    SubscriptionID:
+      description: >-
+        Identifier for a Subscription.  Formatted as a UUIDv4.
+      $ref: '#/components/schemas/UUIDv4Format'
+      example: 78ea3fe8-71c2-4f5c-9b44-9c02f5563c6f
+    DataConsumerBaseURL:
+      description: >-
+        The base URL of a data consumer implementation of part or all of the data consumer API.
+        Per the data consumer API, the full URL of a particular resource can be
+        constructed by appending the path, e.g., `/data_consumer/uas_zones` to this base
+        URL. Accordingly, this URL may not have a trailing '/' character.
+      type: string
+      example: https://data_consumer.example.com/geospatial
+    SubscriptionDataConsumerBaseURL:
+      description: >-
+        The base URL of a data consumer implementation of the parts of the data consumer API
+        necessary for receiving HTTP notifications requested by this subscription.
+      $ref: '#/components/schemas/DataConsumerBaseURL'
+    AMQPQueueURL:
+      description: >-
+        The URL of an AMQP queue where data will become available for the subscriber.
+      type: string
+      example: amqps://data_consumer.example.com:5671/GeospatialInformationService/<subscriptionID>
+    HTTPNotifications:
+      description: >-
+        Definition of how data consumer should receive notifications via HTTP requests.
+      type: object
+      properties:
+        data_consumer_base_url:
+          $ref: '#/components/schemas/SubscriptionDataConsumerBaseURL'
+    AMQPQueueStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - PAUSED
+        - DELETED
+    AMQPQueue:
+      description: >-
+        Definition of how data consumer should receive notifications via an AMQP Queue.
+        
+        When a data consumer requests a subscription be notified via AMQP Queue, the data provider
+        will often ignore any value in publication_location or queue_status fields populated by the
+        data consumer.
+      type: object
+      properties:
+        publication_location:
+          $ref: '#/components/schemas/AMQPQueueURL'
+        queue_status:
+          $ref: '#/components/schemas/AMQPQueueStatus'
+    SubscriberNotificationMethod:
+      description: >-
+        Definition of method by which a subscriber obtains notifications that geospatial data of interest has changed.
+        
+        Exactly one field must be populated.
+      type: object
+      properties:
+        http:
+          $ref: '#/components/schemas/HTTPNotifications'
+        amqp:
+          $ref: '#/components/schemas/AMQPQueue'
+    SubscriptionNotificationIndex:
+      format: int32
+      description: >-
+        Tracks the notifications sent for a subscription so the subscriber can
+        detect missed notifications more easily.
+      type: integer
+      minimum: 0
+      exclusiveMinimum: false
+      default: 0
+    NotificationPeriod:
+      description: >-
+        If specified and greater than zero, the data provider should dispatch a notification
+        within this number of seconds since dispatching the previous notification (or establishing
+        the Subscription, if no notifications have yet been sent) in 99% of cases even if there
+        have been no geospatial data changes since the previous notification.
+      type: number
+      format: int32
+      example: 900
+    Subscription:
+      description: >-
+        Specification of a geographic area that a client is interested in on an
+        ongoing basis.
+      required:
+        - id
+        - version
+        - notification_index
+        - notification_method
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/SubscriptionID'
+        version:
+          description: >-
+            Version of the subscription that the data provider changes every time a data consumer
+            changes the subscription.  The data provider incrementing the
+            notification_index does not constitute a change that triggers a new
+            version.  A data consumer must specify this version when modifying an existing
+            subscription to ensure consistency in read-modify-write operations
+            and distributed systems.
+          type: string
+        notification_index:
+          $ref: '#/components/schemas/SubscriptionNotificationIndex'
+        time_start:
+          description: >-
+            If set, this subscription will not receive notifications involving
+            geospatial changes entirely before this time.
+          $ref: '#/components/schemas/DateTimeType'
+        time_end:
+          description: >-
+            If set, this subscription will not receive notifications involving
+            geospatial changes entirely after this time.
+          $ref: '#/components/schemas/DateTimeType'
+        notification_method:
+          $ref: '#/components/schemas/SubscriberNotificationMethod'
+        notification_period_p99_seconds:
+          $ref: '#/components/schemas/NotificationPeriod'
+    SubscriptionState:
+      description: >-
+        State of subscription which is causing a notification to be sent.
+      required:
+        - subscription_id
+        - notification_index
+      type: object
+      properties:
+        subscription_id:
+          $ref: '#/components/schemas/SubscriptionID'
+        notification_index:
+          $ref: '#/components/schemas/SubscriptionNotificationIndex'
+
+    QuerySubscriptionsResponse:
+      description: >-
+        Response to data provider query for subscriptions in a particular geographic area.
+      required:
+        - subscriptions
+      type: object
+      properties:
+        subscriptions:
+          description: >-
+            Subscriptions that overlap the specified geographic area.
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
+          default: [ ]
+    GetSubscriptionResponse:
+      description: >-
+        Response to data provider request for the subscription with the given ID.
+      required:
+        - subscription
+      type: object
+      properties:
+        subscription:
+          $ref: '#/components/schemas/Subscription'
+    PutSubscriptionParameters:
+      description: >-
+        Parameters for a request to create/update a subscription to the data provider's updates.
+      required:
+        - notification_method
+      type: object
+      properties:
+        extents:
+          description: >-
+            Spacetime extents of the volume to subscribe to.
+
+            This subscription will automatically be deleted after its end time
+            if it has not been refreshed by then. If end time is not specified,
+            the value will be chosen automatically by the data provider. If start time is
+            not specified, it will default to the time the request is processed.
+            The end time may not be in the past.
+
+            Note that some geospatial changes triggering notifications may lie entirely
+            outside the requested area.
+            
+            If no extents are specified, the subscriber will receive all updates.
+          $ref: '#/components/schemas/Geometry'
+        notification_method:
+          $ref: '#/components/schemas/SubscriberNotificationMethod'
+        notification_period_p99_seconds:
+          $ref: '#/components/schemas/NotificationPeriod'
+    PutSubscriptionResponse:
+      description: Response for a request to create or update a subscription.
+      required:
+        - subscription
+      type: object
+      properties:
+        subscription:
+          $ref: '#/components/schemas/Subscription'
+    DeleteSubscriptionResponse:
+      description: Response for a successful request to delete a subscription.
+      required:
+        - subscription
+      type: object
+      properties:
+        subscription:
+          $ref: '#/components/schemas/Subscription'
+    NotifyUASZoneChangesParameters:
+      description: >-
+        Parameters of a message informing a data consumer of geospatial changes.
+        Pushed by the data provider directly to data consumers with subscriptions.
+      required:
+        - subscriptions
+        - timestamp
+      type: object
+      properties:
+        subscriptions:
+          type: array
+          description: Subscription(s) prompting this notification.
+          items:
+            $ref: '#/components/schemas/SubscriptionState'
+          minItems: 1
+        timestamp:
+          description: >-
+            Time at which this update was current.
+          $ref: '#/components/schemas/DateTimeType'
+        updated_zones:
+          description: >-
+            Full information for new or updated UAS Zones.
+          $ref: '#/components/schemas/FeatureCollection'
+        deleted_zones:
+          description: >-
+            Identifiers of UAS Zones deleted.
+          type: array
+          items:
+            $ref: '#/components/schemas/UASZoneID'
+          default: [ ]
+
+  parameters:
+    updated_after:
+      name: updated_after
+      description: >-
+        If specified, only return items updated after this time.
+      schema:
+        $ref: '#/components/schemas/DateTimeType'
+      in: query
+      required: false
+    polygon:
+      name: polygon
+      description: >-
+        If specified, indicates non-interest in items outside this area.
+        
+        The data provider may, nonetheless, include items entirely outside this
+        area in the result depending on implementation.
+      schema:
+        $ref: '#/components/schemas/GeoPolygonString'
+      in: query
+      required: false
+    circle_center_lat:
+      name: circle_center_lat
+      description: >-
+        If specified, indicates non-interest in items outside the specified circle.
+        
+        If this parameter is specified, all circle parameters must be specified.
+      schema:
+        type: number
+        format: double
+        minimum: -90
+        maximum: 90
+      in: query
+      required: false
+    circle_center_lng:
+      name: circle_center_lng
+      description: >-
+        If specified, indicates non-interest in items outside the specified circle.
+        
+        If this parameter is specified, all circle parameters must be specified.
+      schema:
+        type: number
+        format: double
+        minimum: -180
+        maximum: 180
+      in: query
+      required: false
+    circle_radius:
+      name: circle_radius
+      description: >-
+        If specified, indicates non-interest in items outside the specified circle.
+        
+        If this parameter is specified, all circle parameters must be specified.
+      schema:
+        type: number
+        format: double
+        minimum: 0
+        exclusiveMinimum: true
+      in: query
+      required: false
+    circle_radius_uom:
+      name: circle_radius_uom
+      description: >-
+        If specified, indicates non-interest in items outside the specified circle.
+        
+        If this parameter is specified, all circle parameters must be specified.
+      schema:
+        $ref: '#/components/schemas/UomDistance'
+      in: query
+      required: false
+    earliest_time:
+      name: earliest_time
+      description: >-
+        If specified, indicates non-interest in items that end before this time.
+        
+        The data provider may, nonetheless, include items ending before this time
+        in the result depending on implementation.
+        
+        RFC 3339 format, per OpenAPI specification.
+      schema:
+        format: date-time
+        type: string
+      in: query
+      required: false
+    latest_time:
+      name: latest_time
+      description: >-
+        If specified, indicates non-interest in any items that start after this time.
+        
+        The data provider may, nonetheless, include items beginning after this time
+        in the result depending on implementation.
+        
+        RFC 3339 format, per OpenAPI specification.
+      schema:
+        format: date-time
+        type: string
+      in: query
+      required: false
+    lowest_altitude:
+      name: lowest_altitude
+      description: >-
+        If specified, indicates non-interest in items whose ceiling is below this altitude.
+        
+        The data provider may, nonetheless, include items whose ceiling is below this
+        altitude in the result depending on implementation.
+        
+        RFC 3339 format, per OpenAPI specification.
+      schema:
+        $ref: '#/components/schemas/AltitudeString'
+      in: query
+      required: false
+    highest_altitude:
+      name: highest_altitude
+      description: >-
+        If specified, indicates non-interest in any items whose floor is above this altitude.
+        
+        The data provider may, nonetheless, include items whose floor is below this
+        altitude in the result depending on implementation.
+        
+        RFC 3339 format, per OpenAPI specification.
+      schema:
+        $ref: '#/components/schemas/AltitudeString'
+      in: query
+      required: false
+
+  securitySchemes:
+    Authority:
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes:
+            geospatial.data_provider: Client may provide geospatial data to data consumers.
+            geospatial.data_consumer: Client may consume geospatial data from data
+              providers.
+      type: oauth2
+      description: >-
+        Authorization from, or on behalf of, an authorization authority.  This authority must issue access tokens that are JSON Web Tokens as defined in RFC 7519, using the `RS256` algorithm for the signature, and publish to all providers the public key for verifying that signature.
+
+        The following fields must be included in the JWT claim for access tokens issued by this authority:
+        * `iss`, with the URL at which the token generation request was received.
+        * `exp`, with a time no further than 1 hour in the future.
+        * `sub`, with unique ID of the client requesting the access token.
+        * `scope`, with an array of strings indicating the scopes granted.
+
+        The tokens granted by this authority must protect against reuse of received tokens to impersonate the sender to other recipients (via use of the `aud` claim or other means).
+
+        When using the `aud` claim to protect against the reuse of received
+        tokens, and absent guidance on behalf of the competent authority to the
+        contrary, the JWT `aud` claim requested by the client must be included
+        in each access token and must contain the fully qualified domain name of
+        the URL the access token will be used to access.  For example, if a client
+        were querying the endpoint at
+        https://geospatial.example.com:8888/geospatial/v1/data_provider/uas_zones/query,
+        the access token included in the request should specify `"aud":
+        "geospatial.example.com"`.
+
+        Clients shall provide these access tokens in an `Authorization` header in the form `Bearer <token>` in accordance with RFC 6750.
+
+
+paths:
+  /data_provider/uas_zones:
+    get:
+      operationId: getUASZones
+      summary: Retrieve all applicable UAS Zones provided by the data provider.
+      description: >-
+        Note that some UAS Zones returned may lie entirely outside the requested ranges.
+        
+        Note that some data providers may choose not to permit unauthorized access to this endpoint,
+        despite its definition in this specification for data providers that do choose to permit
+        unauthorized access.
+      tags:
+        - data_provider
+        - direct_query
+      security:
+        - Authority:
+          - geospatial.data_consumer
+        - {}
+      parameters:
+        - $ref: '#/components/parameters/updated_after'
+        - $ref: '#/components/parameters/polygon'
+        - $ref: '#/components/parameters/circle_center_lat'
+        - $ref: '#/components/parameters/circle_center_lng'
+        - $ref: '#/components/parameters/circle_radius'
+        - $ref: '#/components/parameters/circle_radius_uom'
+        - $ref: '#/components/parameters/earliest_time'
+        - $ref: '#/components/parameters/latest_time'
+        - $ref: '#/components/parameters/lowest_altitude'
+        - $ref: '#/components/parameters/highest_altitude'
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureCollection'
+          description: UAS Zones were successfully retrieved.
+        400:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: One or more input parameters were missing or invalid.
+        401:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            * Bearer access token was not provided in Authorization header and data
+              provider does not allow unauthorized access.
+            
+            * Bearer token could not be decoded, or token was invalid.
+        403:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The access token was decoded successfully but did not include
+            a scope appropriate to this endpoint.
+        413:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requested area was too large.
+
+  /data_provider/subscriptions:
+    summary: Subscriptions for geospatial updates to a volume of interest.
+    get:
+      operationId: getSubscriptions
+      summary: >-
+        Retrieve all applicable subscriptions from the data provider.
+      description: >-
+        Only subscriptions belonging to the caller are returned.  This endpoint
+        would be used if a data consumer lost track of subscriptions they had created
+        and/or wanted to resolve an error indicating that they had too many
+        existing subscriptions in an area.
+      parameters:
+        - $ref: '#/components/parameters/polygon'
+        - $ref: '#/components/parameters/circle_center_lat'
+        - $ref: '#/components/parameters/circle_center_lng'
+        - $ref: '#/components/parameters/circle_radius'
+        - $ref: '#/components/parameters/circle_radius_uom'
+        - $ref: '#/components/parameters/earliest_time'
+        - $ref: '#/components/parameters/latest_time'
+        - $ref: '#/components/parameters/lowest_altitude'
+        - $ref: '#/components/parameters/highest_altitude'
+      tags:
+        - data_provider
+        - subscriptions
+      security:
+        - Authority:
+            - geospatial.data_consumer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuerySubscriptionsResponse'
+          description: Subscriptions were retrieved successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: One or more input parameters were missing or invalid.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            Bearer access token was not provided in Authorization header, token
+            could not be decoded, or token was invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The access token was decoded successfully but did not include a
+            scope appropriate to this endpoint.
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: The requested area was too large.
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The client issued too many requests in a short period of time.
+
+  /data_provider/subscriptions/{subscription_id}:
+    summary: Create/read endpoint for a specific subscription to the data provider's updates.
+    parameters:
+      - name: subscription_id
+        description: SubscriptionID of the subscription of interest.
+        schema:
+          $ref: '#/components/schemas/SubscriptionID'
+        in: path
+        required: true
+    get:
+      operationId: getSubscription
+      summary: Retrieve the specified subscription from the data provider.
+      description: Retrieve a specific subscription.
+      tags:
+        - data_provider
+        - subscriptions
+      security:
+        - Authority:
+            - geospatial.data_consumer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSubscriptionResponse'
+          description: Subscription information was retrieved successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: One or more input parameters were missing or invalid.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            Bearer access token was not provided in Authorization header, token
+            could not be decoded, or token was invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The access token was decoded successfully but did not include a
+            scope appropriate to this endpoint.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: A subscription with the specified ID was not found.
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The client issued too many requests in a short period of time.
+    put:
+      operationId: createSubscription
+      summary: Create the specified subscription to the data provider's updates.
+      description: >-
+        Create a subscription.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutSubscriptionParameters'
+        required: true
+      tags:
+        - data_provider
+        - subscriptions
+      security:
+        - Authority:
+            - geospatial.data_consumer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PutSubscriptionResponse'
+          description: A new subscription was created successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            * One or more input parameters were missing or invalid.
+
+            * The request attempted to mutate the subscription in a disallowed
+            way.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            Bearer access token was not provided in Authorization header, token
+            could not be decoded, or token was invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The access token was decoded successfully but did not include a
+            scope appropriate to this endpoint or the request.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            A subscription with the specified ID already exists.
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The client may have issued too many requests within a small period
+            of time.
+        '501':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The requested notification method or other requested feature is not supported.
+
+  /data_provider/subscriptions/{subscription_id}/{version}:
+    summary: Update/delete a specific subscription to the data provider's updates.
+    parameters:
+      - name: subscription_id
+        description: SubscriptionID of the subscription of interest.
+        schema:
+          $ref: '#/components/schemas/SubscriptionID'
+        in: path
+        required: true
+      - name: version
+        description: Version of the subscription to be modified.
+        schema:
+          type: string
+        in: path
+        required: true
+    put:
+      operationId: updateSubscription
+      summary: Update the specified subscription to the data provider's updates.
+      description: >-
+        Update a subscription.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutSubscriptionParameters'
+        required: true
+      tags:
+        - data_provider
+        - subscriptions
+      security:
+        - Authority:
+            - geospatial.data_consumer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PutSubscriptionResponse'
+          description: A subscription was updated successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            * One or more input parameters were missing or invalid.
+
+            * The request attempted to mutate the subscription in a disallowed
+            way.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            Bearer access token was not provided in Authorization header, token
+            could not be decoded, or token was invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The access token was decoded successfully but did not include a
+            scope appropriate to this endpoint or the request.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            * A subscription with the specified ID already exists and is managed
+            by a different client.
+
+            * The provided `version` does not match the current subscription.
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The client may have issued too many requests within a small period
+            of time.
+        '501':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The requested notification method or other requested feature is not supported.
+    delete:
+      operationId: deleteSubscription
+      summary: Remove the specified subscription from the data provider.
+      tags:
+        - data_provider
+        - subscriptions
+      security:
+        - Authority:
+            - geospatial.data_provider
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteSubscriptionResponse'
+          description: Subscription was successfully removed.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: One or more input parameters were missing or invalid.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            Bearer access token was not provided in Authorization header, token
+            could not be decoded, or token was invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The access token was decoded successfully but did not include a
+            scope appropriate to this endpoint.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: A subscription with the specified ID was not found.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            * A subscription with the specified ID is managed by a different
+            client.
+
+            * The provided `version` does not match the current subscription.
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The client issued too many requests in a short period of time.
+
+
+  /data_consumer/uas_zones:
+    summary: >-
+      A data consumer's representation of UAS Zones.
+    post:
+      operationId: notifyUASZonesChanged
+      summary: Notify a subscribed data consumer of changes to geospatial information.
+      tags:
+        - data_consumer
+        - subscriptions
+      security:
+        - Authority:
+            - geospatial.data_consumer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotifyUASZoneChangesParameters'
+        required: true
+      responses:
+        '204':
+          description: >-
+            Geospatial information changes received successfully.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            * One or more parameters were missing or invalid.
+
+            * The changes could not be parsed, or contain illegal data.
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            Bearer access token was not provided in Authorization header, token
+            could not be decoded, or token was invalid.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The access token was decoded successfully but did not include a
+            scope appropriate to this endpoint.
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The Entity version specified in this message is identical to a
+            previously-received notification and the Entity is different.
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: >-
+            The client issued too many requests in a short period of time.
+
+security:
+- Authority:
+  - geospatial.data_provider
+- Authority:
+  - geospatial.data_consumer
+tags:
+- name: data_provider
+  description: Endpoints exposed by a data provider.
+- name: data_consumer
+  description: Endpoints exposed by a data consumer.
+- name: subscriptions
+  description: Endpoints used by providers and subscribers when using Subscriptions.
+- name: direct_query
+  description: Endpoints used by data consumers to obtain direct/one-off access to UAS zone data.
